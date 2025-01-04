@@ -29,3 +29,8 @@ There are several workflows defined in this project:
 # Project Development Journey
 
 * The firs step was to create the project structure and CI. As I used one of my existing project as a template, this step took around 30 min.
+* Then I started to implement the API. I started with the user API, as it is the most basic one.
+  * I started to add a repository layer with a mongoDB implementation, but a realized that it was too much for this project at this step. So I decided to use a simple in-memory database.
+  * I added some basic unit test to show how to test the API. I tried to not add too much tests, as the goal is to show how to test the API, not to test everything.
+  * I added a bruno collection to show how to use it.
+  * I added logs to have a better understanding of what is happening.
