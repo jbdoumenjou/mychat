@@ -1,12 +1,18 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
+	"github.com/jbdoumenjou/mychat/internal/api"
 	"github.com/jbdoumenjou/mychat/internal/log"
+	"github.com/jbdoumenjou/mychat/internal/repo"
 )
 
 func main() {
@@ -22,16 +28,47 @@ func main() {
 		os.Exit(1)
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		slog.Info("answer request", slog.String("path", r.URL.Path))
+	// Repository
+	userRepo := repo.NewUserRepository()
 
-		if _, err := fmt.Fprintln(w, "Hello, World"); err != nil {
-			slog.Error("failed to write response", slog.String("error", err.Error()))
+	// API handlers
+	userHandler := api.NewUserHandler(userRepo)
+	router := api.NewRouter(userHandler)
+
+	// Create an HTTP server
+	server := &http.Server{
+		Addr:         ":8080",
+		Handler:      router,
+		IdleTimeout:  10 * time.Second,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	// Channel to listen for OS signals
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+	// Run the server in a goroutine
+	go func() {
+		slog.Info("Starting server on :8080")
+
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("Error starting server", slog.String("error", err.Error()))
 		}
-	})
+	}()
 
-	if err := http.ListenAndServe(":8080", nil); err != nil { //nolint:gosec // Reason: This is a simple example.
-		slog.Error("failed to start server", slog.String("error", err.Error()))
-		os.Exit(1)
+	// Wait for a signal
+	<-stop
+	slog.Info("Shutting down server...")
+
+	// Create a context with a timeout for graceful shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Shutdown the server gracefully
+	if err := server.Shutdown(ctx); err != nil {
+		slog.Error("Server forced to shutdown", slog.String("error", err.Error()))
+	} else {
+		slog.Info("Server shutdown gracefully")
 	}
 }
