@@ -17,12 +17,12 @@ func TestRegisterUser(t *testing.T) {
 	defer cancel()
 
 	// Create a test request
+	phoneNumber := generateRandomPhoneNumber()
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
 		"/register",
-		// TODO: use a random phone number to avoid collision and validate the phone number
-		strings.NewReader(`{"phoneNumber": "+3306666666"}`),
+		strings.NewReader(`{"phoneNumber": "`+phoneNumber+`"}`),
 	)
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
@@ -40,7 +40,7 @@ func TestRegisterUser(t *testing.T) {
 		ctx,
 		http.MethodPost,
 		"/register",
-		strings.NewReader(`{"phoneNumber": "+3306666666"}`),
+		strings.NewReader(`{"phoneNumber": "`+phoneNumber+`"}`),
 	)
 	require.NoError(t, err)
 	req2.Header.Set("Content-Type", "application/json")

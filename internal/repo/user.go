@@ -2,21 +2,28 @@
 package repo
 
 import (
+	"log/slog"
 	"sync"
 )
 
-// UserRepository manages user storage and operations
+// MessageRepository manages user storage and operations
 // In-memory store for simplicity
 // TODO: use a database instead.
 type UserRepository struct {
 	mu    sync.Mutex
 	users map[string]bool
+
+	logger *slog.Logger
 }
 
-// NewUserRepository initializes a new UserRepository.
+// NewMessageRepository initializes a new MessageRepository.
 func NewUserRepository() *UserRepository {
+	logger := slog.With(slog.String("repo", "user"))
+	logger.Info("created repository")
+
 	return &UserRepository{
-		users: make(map[string]bool),
+		users:  make(map[string]bool),
+		logger: logger,
 	}
 }
 
