@@ -51,7 +51,7 @@ send a new message.
 ```bash
 curl -X POST http://localhost:8080/message \
 -H "Content-Type: application/json" \
--d '{"from": "+1234567890", "to": "+0987654321", "content": "Hello, World!"}'
+-d '{"sender": "+1234567890", "receiver": "+0987654321", "content": "Hello, World!"}'
 ```
 
 | Status Code                 | 	Description                                             |
