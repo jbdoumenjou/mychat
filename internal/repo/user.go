@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-// MessageRepository manages user storage and operations
+// UserRepository manages user storage and operations
 // In-memory store for simplicity
 // TODO: use a database instead.
 type UserRepository struct {
@@ -16,7 +16,7 @@ type UserRepository struct {
 	logger *slog.Logger
 }
 
-// NewMessageRepository initializes a new MessageRepository.
+// NewUserRepository initializes a new UserRepository.
 func NewUserRepository() *UserRepository {
 	logger := slog.With(slog.String("repo", "user"))
 	logger.Info("created repository")

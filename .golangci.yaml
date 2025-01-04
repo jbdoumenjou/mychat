@@ -66,3 +66,8 @@ issues:
   max-same-issues: 0
   exclude:
     - 'package-comments: should have a package comment'
+  exclude-rules:
+    - linters:
+        - gosec
+      text: "G404:"
+      path: "internal/api/message_handler_test.go"
