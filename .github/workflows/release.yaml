@@ -45,28 +45,11 @@ jobs:
         run: |
           GOOS=linux GOARCH=amd64 go build -o .build/mychat-linux-amd64 ./cmd/main.go
 
-      # Build gscli binary for Linux amd64
-      - name: Build Linux gscli amd64 Binary
-        if: ${{ steps.release.outputs.release_created }}
-        run: |
-          GOOS=linux GOARCH=amd64 go build -o .build/gscli-linux-amd64 ./cmd/gscli/main.go
-
       # Build binary for macOS ARM64
       - name: Build macOS ARM64 Binary
         if: ${{ steps.release.outputs.release_created }}
         run: |
           GOOS=darwin GOARCH=arm64 go build -o .build/mychat-macos-arm64 ./cmd/main.go
-
-      # Build gscli binary for macOS ARM64
-      - name: Build gscli macOS ARM64 Binary
-        if: ${{ steps.release.outputs.release_created }}
-        run: |
-          GOOS=darwin GOARCH=arm64 go build -o .build/gscli-macos-arm64 ./cmd/gscli/main.go
-
-      - name: Build Linux ARM64 Binary
-        if: ${{ steps.release.outputs.release_created }}
-        run: |
-          GOOS=linux GOARCH=arm64 go build -o .build/mychat-linux-arm64 ./cmd/main.go
 
       - name: Upload Release Artifact
         if: ${{ steps.release.outputs.release_created }}
@@ -75,7 +58,4 @@ jobs:
         run: |
           gh release upload ${{ steps.release.outputs.tag_name }} \
           .build/mychat-linux-amd64 \
-          .build/mychat-macos-arm64 \
-          .build/mychat-linux-arm64 \
-          .build/gscli-linux-amd64 \
-          .build/gscli-macos-arm64
+          .build/mychat-macos-arm64
