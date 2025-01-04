@@ -1,0 +1,19 @@
+meta {
+  name: Send message
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/messages
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "sender": "+3306666666",
+    "receiver":  "+3306666667",
+    "content": "Another message"
+  }
+}
