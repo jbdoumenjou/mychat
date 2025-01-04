@@ -17,6 +17,32 @@ To check the available target from the Makefile, run the following command:
 make help
 ```
 
+You can run the project locally with debug logs by running the following command:
+
+```bash
+LOG_LEVEL=DEBUG go run ./cmd/main.go
+```
+
+# API
+
+A [Bruno](https://www.usebruno.com/) collection is available in the `docs` folder.
+
+## POST /register
+
+Register a new user.
+
+```bash
+curl -X POST http://localhost:8080/register \
+-H "Content-Type: application/json" \
+-d '{"phoneNumber": "+1234567890"}'
+```
+
+| Status Code       | 	Description                                  |
+|-------------------|-----------------------------------------------|
+| 201 (Created)     | User registered successfully.                 | 
+| 400 (Bad Request) | Invalid input (e.g., missing/invalid fields). |
+| 409 (Conflict)    | 	Phone number already registered.             |
+
 # CI/CD
 
 This project use Github Actions to run the CI/CD pipeline. The pipeline is defined in the `.github/workflows` folder.
