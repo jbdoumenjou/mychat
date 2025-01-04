@@ -30,10 +30,13 @@ func main() {
 
 	// Repository
 	userRepo := repo.NewUserRepository()
+	chatRepo := repo.NewChatRepository()
+	messageRepo := repo.NewMessageRepository()
 
 	// API handlers
 	userHandler := api.NewUserHandler(userRepo)
-	router := api.NewRouter(userHandler)
+	messageHandler := api.NewMessageHandler(userRepo, messageRepo, chatRepo)
+	router := api.NewRouter(userHandler, messageHandler)
 
 	// Create an HTTP server
 	server := &http.Server{

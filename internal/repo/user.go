@@ -2,6 +2,7 @@
 package repo
 
 import (
+	"log/slog"
 	"sync"
 )
 
@@ -11,12 +12,18 @@ import (
 type UserRepository struct {
 	mu    sync.Mutex
 	users map[string]bool
+
+	logger *slog.Logger
 }
 
 // NewUserRepository initializes a new UserRepository.
 func NewUserRepository() *UserRepository {
+	logger := slog.With(slog.String("repo", "user"))
+	logger.Info("created repository")
+
 	return &UserRepository{
-		users: make(map[string]bool),
+		users:  make(map[string]bool),
+		logger: logger,
 	}
 }
 
