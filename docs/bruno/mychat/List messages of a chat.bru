@@ -1,0 +1,11 @@
+meta {
+  name: List messages of a chat
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/chats/{{chat_id}}/messages
+  body: none
+  auth: none
+}

@@ -36,7 +36,7 @@ func main() {
 	// API handlers
 	userHandler := api.NewUserHandler(userRepo)
 	messageHandler := api.NewMessageHandler(userRepo, messageRepo, chatRepo)
-	chatHandler := api.NewChatHandler(chatRepo)
+	chatHandler := api.NewChatHandler(chatRepo, messageRepo)
 
 	router := api.NewRouter(userHandler, messageHandler, chatHandler)
 

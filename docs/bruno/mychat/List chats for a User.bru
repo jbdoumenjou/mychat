@@ -5,11 +5,15 @@ meta {
 }
 
 get {
-  url: http://localhost:8080/chats?phoneNumber=%2B330666666
+  url: {{base_url}}/chats?phoneNumber=%2B330666666
   body: none
   auth: none
 }
 
 params:query {
   phoneNumber: +330666666
+}
+
+vars:post-response {
+  chat_id: res.body[0].id
 }

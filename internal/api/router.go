@@ -13,6 +13,8 @@ func NewRouter(users *UserHandler, messages *MessageHandler, chats *ChatHandler)
 	mux.HandleFunc("POST /messages", messages.SendMessage)
 	// list all chats for a user based on the phone number.
 	mux.HandleFunc("GET /chats", chats.ListChats)
+	// list all messages for a chat.
+	mux.HandleFunc("GET /chats/{id}/messages", chats.ListChatMessages)
 
 	return mux
 }

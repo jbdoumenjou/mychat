@@ -11,7 +11,8 @@ import (
 
 // ChatHandler is the handler for user registration.
 type ChatHandler struct {
-	chatRepo ChatRepo
+	chatRepo    ChatRepo
+	messageRepo ChatMessageRepo
 
 	logger *slog.Logger
 }
@@ -21,14 +22,20 @@ type ChatRepo interface {
 	GetUserChats(user string) ([]repo.Chat, error)
 }
 
+// ChatMessageRepo defines the chat message repository.
+type ChatMessageRepo interface {
+	GetChatMessages(chatID string) ([]string, error)
+}
+
 // NewChatHandler creates a new ChatHandler.
-func NewChatHandler(chatRepo ChatRepo) *ChatHandler {
+func NewChatHandler(chatRepo ChatRepo, messageRepo ChatMessageRepo) *ChatHandler {
 	logger := slog.With(slog.String("handler", "chat"))
 	logger.Info("created handler")
 
 	return &ChatHandler{
-		chatRepo: chatRepo,
-		logger:   logger,
+		chatRepo:    chatRepo,
+		messageRepo: messageRepo,
+		logger:      logger,
 	}
 }
 
@@ -74,4 +81,35 @@ func (h *ChatHandler) ListChats(w http.ResponseWriter, r *http.Request) {
 
 		http.Error(w, "failed to write response", http.StatusInternalServerError)
 	}
+}
+
+// ListChatMessages list all messages for a chat.
+func (h *ChatHandler) ListChatMessages(w http.ResponseWriter, r *http.Request) {
+	h.logger.DebugContext(r.Context(), "handler list messages for a chat", slog.String("path", r.URL.Path))
+	chatID := r.PathValue("id")
+
+	messages, err := h.messageRepo.GetChatMessages(chatID)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(),
+			"failed to get chat messages",
+			slog.String("error", err.Error()),
+		)
+		http.Error(w, "failed to get chat messages", http.StatusInternalServerError)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if err = json.NewEncoder(w).Encode(messages); err != nil {
+		h.logger.ErrorContext(r.Context(),
+			"failed to write response",
+			slog.String("error", err.Error()),
+		)
+
+		http.Error(w, "failed to write response", http.StatusInternalServerError)
+	}
+
+	h.logger.DebugContext(r.Context(), "successfully get chat messages")
 }
