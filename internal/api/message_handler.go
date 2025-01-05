@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-
-	"github.com/jbdoumenjou/mychat/internal/repo"
 )
 
 // MessageHandler is the handler for user registration.
@@ -30,7 +28,6 @@ type MessageRepo interface {
 // MessageChatRepo defines the chat repository.
 type MessageChatRepo interface {
 	GetOrCreateChat(sender, receiver string) (string, error)
-	GetChatsByUser(user string) ([]*repo.Chat, error)
 }
 
 // NewMessageHandler creates a new MessageHandler.

@@ -11,8 +11,9 @@ import (
 
 // Chat represents a chat between 2 users.
 type Chat struct {
-	ID        string
-	CreatedAt time.Time
+	ID           string
+	Participants []string // user IDs
+	CreatedAt    time.Time
 }
 
 // ChatRepository manages chat storage and operations
@@ -41,41 +42,60 @@ func NewChatRepository() *ChatRepository {
 // GetOrCreateChat gets a chat from the repository.
 // TODO: refactor to avoid doing 2 things in one function.
 // This is a very naive approach to chat management.
-func (repo *ChatRepository) GetOrCreateChat(sender, receiver string) (string, error) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
+func (r *ChatRepository) GetOrCreateChat(sender, receiver string) (string, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
-	if _, exists := repo.chats[sender]; !exists {
-		repo.chats[sender] = make(map[string]*Chat)
+	if _, exists := r.chats[sender]; !exists {
+		r.chats[sender] = make(map[string]*Chat)
 	}
 
-	if _, exists := repo.chats[receiver]; !exists {
-		repo.chats[receiver] = make(map[string]*Chat)
+	if _, exists := r.chats[receiver]; !exists {
+		r.chats[receiver] = make(map[string]*Chat)
 	}
 
-	chat, exists := repo.chats[sender][receiver]
+	chat, exists := r.chats[sender][receiver]
 	if !exists || chat == nil {
 		chat = &Chat{
-			ID:        uuid.NewString(),
-			CreatedAt: time.Now().UTC().Truncate(time.Millisecond),
+			ID:           uuid.NewString(),
+			Participants: []string{sender, receiver},
+			CreatedAt:    time.Now().UTC().Truncate(time.Millisecond),
 		}
 
 		// add chat to sender and receiver to retrieve all chat for a user
-		repo.chats[sender][receiver] = chat
-		repo.chats[receiver][sender] = chat
+		r.chats[sender][receiver] = chat
+		r.chats[receiver][sender] = chat
 
 		// Add to `chatsByUser`
-		repo.chatsByUser[sender] = append(repo.chatsByUser[sender], chat)
-		repo.chatsByUser[receiver] = append(repo.chatsByUser[receiver], chat)
+		r.chatsByUser[sender] = append(r.chatsByUser[sender], chat)
+		r.chatsByUser[receiver] = append(r.chatsByUser[receiver], chat)
 	}
 
 	return chat.ID, nil
 }
 
-// GetChatsByUser gets all chats for a user.
-func (repo *ChatRepository) GetChatsByUser(user string) ([]*Chat, error) {
-	repo.mu.RLock()
-	defer repo.mu.RUnlock()
+// GetUserChats gets all chats for a user.
+// TODO:
+// * add pagination. (more appropriate for a database)
+// * return a DTO instead of the entity.
+func (r *ChatRepository) GetUserChats(user string) ([]Chat, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	return repo.chatsByUser[user], nil
+	if _, exists := r.chatsByUser[user]; !exists {
+		return []Chat{}, nil
+	}
+
+	// dereference the chats
+	result := make([]Chat, len(r.chatsByUser[user]))
+	for i, chat := range r.chatsByUser[user] {
+		result[i] = *chat
+	}
+
+	r.logger.Debug("get user chats",
+		slog.String("user", user),
+		slog.Any("chats", result),
+	)
+
+	return result, nil
 }
