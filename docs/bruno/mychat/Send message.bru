@@ -5,15 +5,15 @@ meta {
 }
 
 post {
-  url: http://localhost:8080/messages
+  url: {{base_url}}/messages
   body: json
   auth: none
 }
 
 body:json {
   {
-    "sender": "+3306666666",
-    "receiver":  "+3306666667",
+    "sender": "+330666666",
+    "receiver":  "+330666668",
     "content": "Another message"
   }
 }

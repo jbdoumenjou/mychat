@@ -10,7 +10,7 @@ import (
 // In-memory store for simplicity
 // TODO: use a database instead.
 type MessageRepository struct {
-	mu       sync.Mutex
+	mu       sync.RWMutex
 	messages map[string][]string // map[chatID][message1, message2, message3]
 
 	logger *slog.Logger
@@ -35,4 +35,18 @@ func (repo *MessageRepository) AddMessage(chatID, content string) error {
 	repo.messages[chatID] = append(repo.messages[chatID], content)
 
 	return nil
+}
+
+// GetChatMessages gets all messages from a chat.
+func (repo *MessageRepository) GetChatMessages(chatID string) ([]string, error) {
+	repo.mu.RLock()
+	defer repo.mu.RUnlock()
+
+	messages, ok := repo.messages[chatID]
+	if !ok {
+		// consider an empty slice of messages if the chat does not exist
+		return []string{}, nil
+	}
+
+	return messages, nil
 }

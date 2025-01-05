@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 
 	userHandler := NewUserHandler(testUserRepo)
 	messageHandler := NewMessageHandler(testUserRepo, testMessageRepo, testChatRepo)
-	chatHandler := NewChatHandler(testChatRepo)
+	chatHandler := NewChatHandler(testChatRepo, testMessageRepo)
 
 	// Create the testRouter
 	testRouter = NewRouter(userHandler, messageHandler, chatHandler)
