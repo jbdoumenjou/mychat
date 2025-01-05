@@ -61,6 +61,25 @@ curl -X POST http://localhost:8080/message \
 | 404 (Not Found)             | The sender or recipient phone number does not exist.     |
 | 500 (Internal Server Error) | A server-side error occurs while processing the request. |
 
+## GET /chats?phoneNumber={phoneNumber}
+
+List the chats for the provided phone number.
+
+For the sake of simplicity, and security,
+if the phone number is not provided, the API will return an empty list.
+The number is passed as a query parameter but should be retrieved from the user token,
+or in a way that does not expose it.
+
+```bash
+curl "http://localhost:8080/chats?phoneNumber=%2B3306666666"
+```
+
+| Status Code                 | 	Description                                             |
+|-----------------------------|----------------------------------------------------------|
+| 200 (ok)                    | return the list successfully.                            | 
+| 400 (Bad Request)           | Invalid input (e.g., missing/invalid fields).            |
+| 500 (Internal Server Error) | A server-side error occurs while processing the request. |
+
 
 # CI/CD
 
@@ -75,7 +94,7 @@ There are several workflows defined in this project:
 
 ## Step 1: Create the project structure and CI
 
-The firs step was to create the project structure and CI. As I used one of my existing project as a template, this step took around 30 min.
+The first step was to create the project structure and CI. As I used one of my existing project as a template, this step took around 30 min.
 
 ## Step 2: Create the API - register a user
 
@@ -95,3 +114,13 @@ I face issue thinking about how to store the messages.
 To keep it simple a decided to have a chat repository that is in charge of managing chat, which are discussions between two users.
 Then, the chat ID is used to store the messages. In that way, we don't have to think in sender/receiver, just in chat.
 This step is very naive too, but should be enough for the next step, which is listing the messages.
+
+## Step 4: Create the API - list the chats for a user
+
+Now that we can send messages, we need to list the chats for a user.
+For this step, I added 
+* a chat repository that is in charge of managing the chats.
+* a chat handler that is in charge of managing the chat API.
+
+I keep let the phoneNumber in the query parameter, but it should be in the token, or in a way that does not expose it.
+We should use a pagination system to avoid returning all the chats at once.

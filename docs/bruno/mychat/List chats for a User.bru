@@ -1,0 +1,15 @@
+meta {
+  name: List chats for a User
+  type: http
+  seq: 4
+}
+
+get {
+  url: http://localhost:8080/chats?phoneNumber=%2B330666666
+  body: none
+  auth: none
+}
+
+params:query {
+  phoneNumber: +330666666
+}
