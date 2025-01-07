@@ -153,3 +153,110 @@ where the primary goal is to retrieve messages belonging to a specific chat.
 
 For this step, I keep the same line of thought as the previous steps, and the in memory database.
 We should have more tests, especially unit test on repositories to migrate to a real database.
+
+# Next
+
+We can improve the project in many ways. Here are some ideas (the order can be changed):
+
+* Deploy a Real-Time Messaging System
+  * Current API is based on polling, which is inefficient for real-time applications.
+  * WebSockets or Server-Sent Events enable real-time communication.
+* Replace the in-memory database with a real database.
+  * In-memory data is ephemeral and will be lost when the server restarts.
+  * Persisting data ensures reliability and scalability.
+* Add Pagination for Chats and Messages
+  * Retrieve messages and chats in smaller, more manageable chunks.
+  * Improve performance and reduce the load on the server.
+* Improve Validation and Error Handling
+  * Ensure data integrity and a better user experience.
+  * Prevent invalid input or edge cases (e.g., sending messages to non-existent phone numbers).
+* Add Read/Delivered Message Status
+  * Indicate when a message has been read or delivered.
+  * Enhance the user experience and provide more context.
+* Improve unit tests
+  * Add more unit tests to cover edge cases and ensure code quality.
+  * Use mocks and stubs to isolate components and improve test reliability.
+* Add Integration Tests
+  * Test the interaction between components (e.g., API endpoints, database).
+  * Ensure the system works as expected in a real-world scenario.
+* Implement Authentication and Authorization
+  * Secure the API and prevent unauthorized access.
+  * Use tokens, OAuth, or other authentication mechanisms.
+
+## Database
+
+We can use a real database to store the data. We can use MongoDB, PostgreSQL, or any other database.
+We can use an ORM to simplify the database interactions.
+Both options have their pros and cons, and the choice depends on the project requirements.
+We can use Redis to store the messages, as it is a good fit for real-time messaging applications,
+and use a relational database to store the users and chats.
+This approach combines the strengths of both databases, but adds complexity to the system.
+We can start with a single database and migrate to a more complex setup as needed.
+The interest of Redis is to propose pub/sub or stream system to notify the user when a new message is received.
+
+## Live Messaging
+
+We can implement a real-time messaging system using WebSockets and Redis Stream.
+
+```mermaid
+sequenceDiagram
+  participant UserA as User A (Phone App)
+  participant Backend as Backend
+  participant Redis as Redis
+  participant UserB as User B (Phone App)
+
+%% Sending a Message
+  note over UserA,UserB: Message Flow Using Redis Streams
+  UserA->>Backend: Send Message (POST /send)
+  Backend->>Redis: Add to Stream (chat:123)
+  Redis-->>Backend: Message ID Returned
+  Backend->>Redis: Update Message Status to "sent"
+  Backend-->>UserA: Message Sent (200 OK)
+
+%% Real-Time Message Delivery
+  note over UserA,UserB: Real-Time Delivery for Active Users
+  Redis->>Backend: New Message Available (Stream Consumer Group)
+  Backend->>UserB: Push Message (WebSocket)
+  UserB->>Backend: Acknowledge Message Received
+  Backend->>Redis: Update Message Status to "delivered"
+
+%% Offline Message Retrieval
+  note over UserA,UserB: Offline User Fetching Messages
+  UserB->>Backend: Fetch Messages (GET /messages?chat=123)
+  Backend->>Redis: Read Pending Messages from Stream (chat:123)
+  Redis-->>Backend: Return Messages
+  Backend->>Redis: Update Message Status to "delivered"
+  Backend-->>UserB: Deliver Messages (HTTP Response)
+  UserB->>Backend: Mark Message as Read
+  Backend->>Redis: Update Message Status to "read"
+
+```
+
+I'm not familiar with Redis, so I don't know if it is the best solution for this use case,
+but I'm very curious to learn more about it.
+
+## API
+
+We can imagine something more RESTful, like:
+
+| Method | Path                                             | Body                                                                  | Response                                                                                 | Description                                                                                                                          |
+|--------|--------------------------------------------------|-----------------------------------------------------------------------|------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| POST   | /users                                           | {"phoneNumber": "+3306666666"}                                        | 201 Created                                                                              | Register a user by phone number.                                                                                                     |
+| POST   | /chats                                           | {"participants":["+3306666666","+3307777777"]}                        | {"id":"bd065d0d", "participants":["+3306666666","+3307777777"]}                          | Create a new chat with a list of participants.                                                                                       |
+| POST   | /messages                                        | {"chatId":"xxxxx", "sender":"+3306666666", "content":"Hello, World!"} | {"id":"bd065d0a", "chatId":"xxxxx", "sender":"+3306666666", "content":"Hello, World!"}   | Send a message to a chat.                                                                                                            |
+| GET    | /chats?participant=+3306666666&limit=10&offset=0 |                                                                       | [{"id":"bd065d0b", "participants":["+3306666666","+3307777777"]}]                        | List all chats for a user, with optional pagination (limit and offset). With auth, the phone number can be retrieved from the token. |
+| GET    | /chats/{chat_id}/messages?limit=10&offset=0      |                                                                       | [{"id":"bd065d0c", "chatId":"xxxxx", "sender":"+3306666666", "content":"Hello, World!"}] | List all messages for a chat, with optional pagination (limit and offset).                                                           |
+
+This API impose to have a chat before sending a message, which is not the case in the current API.
+IT is a constraint for a one to one chat, but it is more adapted for a group chat.
+It is also more RESTful, as we have a chat resource, and a message resource.
+We can also replace phone number by a user ID, which is more secure.
+
+For the live messaging, we can add a WebSocket endpoint to listen to new messages, and endpoints to manage message status.
+
+| Method | 	Path	                 | Body/Query	                                | Response	                                               | Description                                                                                           |
+|--------|------------------------|--------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| GET    | /ws	                   | token=<user_auth_token>                    | WebSocket connection	                                   | Establishes a WebSocket connection for real-time messaging.                                           |
+| POST   | /messages              | 	{"chatId": "xxxxx", "content": "Hello!"}  | {"id": "bd065d0a", "timestamp": "2025-01-01T12:00:00Z"} | Send a message to a chat. This endpoint persists the message and optionally notifies connected users. |
+| POST   | /chats/{chatId}/typing | 	{ "isTyping": true }                      | 200 OK	                                                 | Notify other participants in the chat that the user is typing.                                        |
+| POST   | /chats/{chatId}/status | { "messageId": "xxxxx", "status": "read" } | 200 OK                                                  | Update the status of a message (e.g., delivered, read).                                               |
