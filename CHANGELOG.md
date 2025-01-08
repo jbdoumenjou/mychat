@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/jbdoumenjou/mychat/compare/v0.1.0...v0.1.1) (2025-01-08)
+
+
+### Bug Fixes
+
+* clean dependencies ([#10](https://github.com/jbdoumenjou/mychat/issues/10)) ([f995e05](https://github.com/jbdoumenjou/mychat/commit/f995e0571c5d69917c789402bc5d3b276266cfba))
+
 ## 0.1.0 (2025-01-05)
 
 
