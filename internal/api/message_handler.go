@@ -1,9 +1,14 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
+
+	"github.com/gorilla/websocket"
+	"github.com/jbdoumenjou/mychat/internal/ws"
 )
 
 // MessageHandler is the handler for user registration.
@@ -11,6 +16,8 @@ type MessageHandler struct {
 	chatRepo    MessageChatRepo
 	messageRepo MessageRepo
 	userRepo    MessageUserRepo
+	hub         *ws.Hub
+	upgrader    websocket.Upgrader
 
 	logger *slog.Logger
 }
@@ -39,7 +46,16 @@ func NewMessageHandler(userRepo MessageUserRepo, messageRepo MessageRepo, chatRe
 		chatRepo:    chatRepo,
 		messageRepo: messageRepo,
 		userRepo:    userRepo,
-		logger:      logger,
+		// TODO: Check if the hub should be injected or created here.
+		hub: ws.NewHub(),
+		upgrader: websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+			CheckOrigin: func(_ *http.Request) bool {
+				return true // Allow all origins for simplicity; adjust for security.
+			},
+		},
+		logger: logger,
 	}
 }
 
@@ -124,4 +140,59 @@ func (h *MessageHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		"Content send successfully",
 		slog.Any("message", message),
 	)
+}
+
+// HandleWS upgrades the HTTP connection to a WebSocket and manages messages.
+func (h *MessageHandler) HandleWS(w http.ResponseWriter, r *http.Request) {
+	userID := r.URL.Query().Get("userID")
+	if userID == "" {
+		slog.Error("missing userID in query params")
+		http.Error(w, "missing userID in query params", http.StatusBadRequest)
+
+		return
+	}
+
+	conn, err := h.upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		slog.Error("failed to upgrade to WebSocket", slog.String("error", err.Error()))
+		http.Error(w, "failed to upgrade to WebSocket", http.StatusInternalServerError)
+
+		return
+	}
+
+	client := ws.NewClient(conn, userID)
+	h.hub.Register(client)
+
+	if err = h.listenWS(r.Context(), conn); err != nil {
+		slog.Error("failed to listenWS", slog.String("error", err.Error()))
+
+		return
+	}
+}
+
+// listenWS reads messages from the WebSocket connection.
+func (h *MessageHandler) listenWS(ctx context.Context, conn *websocket.Conn) error {
+	for {
+		select {
+		case <-ctx.Done():
+			slog.Info("stop listening websocket connection")
+
+			return nil
+		default:
+			var msg ws.Message
+			if err := conn.ReadJSON(&msg); err != nil {
+				if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+					slog.Info("WebSocket connection closed normally")
+
+					return nil
+				}
+
+				slog.Error("WebSocket connection closed unexpectedly", slog.String("error", err.Error()))
+
+				return fmt.Errorf("failed to read message: %w", err)
+			}
+
+			h.hub.Broadcast(&msg)
+		}
+	}
 }

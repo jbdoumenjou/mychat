@@ -11,6 +11,8 @@ func NewRouter(users *UserHandler, messages *MessageHandler, chats *ChatHandler)
 	mux.HandleFunc("POST /register", users.RegisterUser)
 	// send a message to another user, it will be associated to a chat.
 	mux.HandleFunc("POST /messages", messages.SendMessage)
+	// websocket endpoint to send and receive messages in real-time.
+	mux.HandleFunc("/ws", messages.HandleWS)
 	// list all chats for a user based on the phone number.
 	mux.HandleFunc("GET /chats", chats.ListChats)
 	// list all messages for a chat.

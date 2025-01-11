@@ -98,6 +98,24 @@ curl "http://localhost:8080/chats/3163f560-f246-4e68-8551-cb702f8a017a/messages"
 | 400 (Bad Request)           | Invalid input (e.g., missing/invalid fields).            |
 | 500 (Internal Server Error) | A server-side error occurs while processing the request. |
 
+# Live Messages - Websocket /ws
+
+To receive messages in real-time, you can establish a WebSocket connection to the server.
+Then the server will push new messages to the client through the WebSocket connection.
+
+To establish a WebSocket connection, send a GET request to the `/ws?userID={userID}` endpoint.
+
+To send a message, send the following JSON payload:
+
+```json
+{
+  "From":    "user1",
+  "To":      "user2",
+  "Content": "Hello, Jane!"
+} 
+```
+
+
 # CI/CD
 
 This project use Github Actions to run the CI/CD pipeline. The pipeline is defined in the `.github/workflows` folder.
@@ -153,6 +171,31 @@ where the primary goal is to retrieve messages belonging to a specific chat.
 
 For this step, I keep the same line of thought as the previous steps, and the in memory database.
 We should have more tests, especially unit test on repositories to migrate to a real database.
+
+## Step 6: Live messaging - get a message in real-time
+
+I added a new endpoint to get the messages in real-time.
+There are several ways to implement real-time messaging, such as WebSockets, Server-Sent Events, or polling.
+Let's explore the different options and choose the best one for our use case.
+
+| Feature                        | WebSockets            | SSE                   | Long Polling          | gRPC Streaming        | MQTT                  | Push Notifications    |
+|--------------------------------|-----------------------|-----------------------|-----------------------|-----------------------|-----------------------|-----------------------|
+| **Direction**                  | Bidirectional         | Server-to-client      | Server-to-client      | Bidirectional         | Bidirectional         | Server-to-client      |
+| **Binary Support**             | Yes                  | No                    | No                    | Yes                  | Yes                  | No                    |
+| **Reconnection Handling**      | Manual               | Automatic             | Automatic             | Built-in             | Built-in             | Built-in             |
+| **Scalability**                | High                 | Moderate              | Low                   | High                 | High                 | Very High            |
+| **Complexity**                 | Moderate             | Low                   | Low                   | High                 | Moderate             | Moderate             |
+| **Best Use Case**              | Chat, games          | Notifications         | Basic notifications   | Microservices, chat  | IoT, lightweight chat| Offline notifications |
+
+For a first implementation, I could have used Server-Sent Events (SSE) or Long Polling.
+But, in a case of a chat application, and if we want something scalable, WebSockets or GRPC Streaming are more adapted.
+As GRPC is more complex, I decided to use WebSockets.
+
+So, the client must create a WebSocket connection to the server to receive messages in real-time.
+Then, each time a message is sent, the server will push the message to the client through the WebSocket connection.
+
+I hesitated between standard library and a library like gorilla/websocket.
+Finally, I decided to use gorilla/websocket, as it is widely used.
 
 # Next
 
