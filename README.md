@@ -176,6 +176,9 @@ As GRPC is more complex, I decided to use WebSockets.
 So, the client must create a WebSocket connection to the server to receive messages in real-time.
 Then, each time a message is sent, the server will push the message to the client through the WebSocket connection.
 
+I hesitated between standard library and a library like gorilla/websocket.
+Finally, I decided to use gorilla/websocket, as it is widely used.
+
 # Next
 
 We can improve the project in many ways. Here are some ideas (the order can be changed):
