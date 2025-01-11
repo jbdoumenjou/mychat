@@ -98,6 +98,24 @@ curl "http://localhost:8080/chats/3163f560-f246-4e68-8551-cb702f8a017a/messages"
 | 400 (Bad Request)           | Invalid input (e.g., missing/invalid fields).            |
 | 500 (Internal Server Error) | A server-side error occurs while processing the request. |
 
+# Live Messages - Websocket /ws
+
+To receive messages in real-time, you can establish a WebSocket connection to the server.
+Then the server will push new messages to the client through the WebSocket connection.
+
+To establish a WebSocket connection, send a GET request to the `/ws?userID={userID}` endpoint.
+
+To send a message, send the following JSON payload:
+
+```json
+{
+  "From":    "user1",
+  "To":      "user2",
+  "Content": "Hello, Jane!"
+} 
+```
+
+
 # CI/CD
 
 This project use Github Actions to run the CI/CD pipeline. The pipeline is defined in the `.github/workflows` folder.
