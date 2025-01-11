@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gorilla/websocket"
+	"github.com/jbdoumenjou/mychat/internal/ws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -124,4 +126,68 @@ func generateRandomPhoneNumber() string {
 
 	// Return the phone number in E.164 format
 	return fmt.Sprintf("+%d%d", countryCode, localNumber)
+}
+
+func TestMessageHandler_HandleWS(t *testing.T) {
+	messageHandler := NewMessageHandler(nil, nil, nil)
+
+	// Create a test server
+	srv := httptest.NewServer(http.HandlerFunc(messageHandler.HandleWS))
+	defer srv.Close()
+
+	// Parse WebSocket URL from the test server URL
+	wsURL := "ws" + srv.URL[len("http"):]
+
+	// Connect as User A
+	userAConn, _, err := websocket.DefaultDialer.Dial(wsURL+"?userID=userA", nil)
+	defer userAConn.Close()
+	require.NoError(t, err, "Failed to connect as User A")
+
+	// Connect as User B
+	userBConn, _, err := websocket.DefaultDialer.Dial(wsURL+"?userID=userB", nil)
+	defer userBConn.Close()
+	require.NoError(t, err, "Failed to connect as User B")
+
+	// Connect as User C to check that they don't receive the message
+	userCConn, _, err := websocket.DefaultDialer.Dial(wsURL+"?userID=userC", nil)
+	defer userCConn.Close()
+	require.NoError(t, err, "Failed to connect as User C")
+
+	msgToA := &ws.Message{
+		From:    "userB",
+		To:      "userA",
+		Content: "Hello, User A!",
+	}
+	userBConn.WriteJSON(msgToA)
+
+	msgToB := &ws.Message{
+		From:    "userA",
+		To:      "userB",
+		Content: "Hello, User B!",
+	}
+	userAConn.WriteJSON(msgToB)
+
+	// Receive the message on User B's connection
+	var receivedMessage ws.Message
+	err = userAConn.ReadJSON(&receivedMessage)
+	require.NoError(t, err, "Failed to receive message on User B's connection")
+
+	// Assert that the received message matches the sent message
+	assert.Equal(t, msgToA, &receivedMessage)
+
+	var receivedMessage2 ws.Message
+	err = userBConn.ReadJSON(&receivedMessage2)
+	require.NoError(t, err, "Failed to receive message on User B's connection")
+
+	// Assert that the received message matches the sent message
+	assert.Equal(t, msgToB, &receivedMessage2)
+
+	// try to get the message during a laps of time
+	require.Neverf(t, func() bool {
+		var receivedMessage ws.Message
+		err = userCConn.ReadJSON(&receivedMessage)
+
+		return err == nil
+	}, 20*time.Millisecond, 500*time.Millisecond,
+		"User C should not receive the message")
 }

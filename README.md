@@ -154,6 +154,28 @@ where the primary goal is to retrieve messages belonging to a specific chat.
 For this step, I keep the same line of thought as the previous steps, and the in memory database.
 We should have more tests, especially unit test on repositories to migrate to a real database.
 
+## Step 6: Live messaging - get a message in real-time
+
+I added a new endpoint to get the messages in real-time.
+There are several ways to implement real-time messaging, such as WebSockets, Server-Sent Events, or polling.
+Let's explore the different options and choose the best one for our use case.
+
+| Feature                        | WebSockets            | SSE                   | Long Polling          | gRPC Streaming        | MQTT                  | Push Notifications    |
+|--------------------------------|-----------------------|-----------------------|-----------------------|-----------------------|-----------------------|-----------------------|
+| **Direction**                  | Bidirectional         | Server-to-client      | Server-to-client      | Bidirectional         | Bidirectional         | Server-to-client      |
+| **Binary Support**             | Yes                  | No                    | No                    | Yes                  | Yes                  | No                    |
+| **Reconnection Handling**      | Manual               | Automatic             | Automatic             | Built-in             | Built-in             | Built-in             |
+| **Scalability**                | High                 | Moderate              | Low                   | High                 | High                 | Very High            |
+| **Complexity**                 | Moderate             | Low                   | Low                   | High                 | Moderate             | Moderate             |
+| **Best Use Case**              | Chat, games          | Notifications         | Basic notifications   | Microservices, chat  | IoT, lightweight chat| Offline notifications |
+
+For a first implementation, I could have used Server-Sent Events (SSE) or Long Polling.
+But, in a case of a chat application, and if we want something scalable, WebSockets or GRPC Streaming are more adapted.
+As GRPC is more complex, I decided to use WebSockets.
+
+So, the client must create a WebSocket connection to the server to receive messages in real-time.
+Then, each time a message is sent, the server will push the message to the client through the WebSocket connection.
+
 # Next
 
 We can improve the project in many ways. Here are some ideas (the order can be changed):
