@@ -144,16 +144,18 @@ func (h *MessageHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 
 // HandleWS upgrades the HTTP connection to a WebSocket and manages messages.
 func (h *MessageHandler) HandleWS(w http.ResponseWriter, r *http.Request) {
-	conn, err := h.upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		slog.Error("failed to upgrade to WebSocket", slog.String("error", err.Error()))
+	userID := r.URL.Query().Get("userID")
+	if userID == "" {
+		slog.Error("missing userID in query params")
+		http.Error(w, "missing userID in query params", http.StatusBadRequest)
 
 		return
 	}
 
-	userID := r.URL.Query().Get("userID")
-	if userID == "" {
-		slog.Error("missing userID in query params")
+	conn, err := h.upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		slog.Error("failed to upgrade to WebSocket", slog.String("error", err.Error()))
+		http.Error(w, "failed to upgrade to WebSocket", http.StatusInternalServerError)
 
 		return
 	}
@@ -163,7 +165,6 @@ func (h *MessageHandler) HandleWS(w http.ResponseWriter, r *http.Request) {
 
 	if err = h.listenWS(r.Context(), conn); err != nil {
 		slog.Error("failed to listenWS", slog.String("error", err.Error()))
-		http.Error(w, "failed to listenWS", http.StatusInternalServerError)
 
 		return
 	}
@@ -180,7 +181,13 @@ func (h *MessageHandler) listenWS(ctx context.Context, conn *websocket.Conn) err
 		default:
 			var msg ws.Message
 			if err := conn.ReadJSON(&msg); err != nil {
-				slog.Error("failed to read message", slog.String("error", err.Error()))
+				if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+					slog.Info("WebSocket connection closed normally")
+
+					return nil
+				}
+
+				slog.Error("WebSocket connection closed unexpectedly", slog.String("error", err.Error()))
 
 				return fmt.Errorf("failed to read message: %w", err)
 			}

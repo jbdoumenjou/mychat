@@ -139,18 +139,15 @@ func TestMessageHandler_HandleWS(t *testing.T) {
 	wsURL := "ws" + srv.URL[len("http"):]
 
 	// Connect as User A
-	userAConn, _, err := websocket.DefaultDialer.Dial(wsURL+"?userID=userA", nil)
-	defer userAConn.Close()
+	userAConn, rA, err := websocket.DefaultDialer.Dial(wsURL+"?userID=userA", nil)
 	require.NoError(t, err, "Failed to connect as User A")
 
 	// Connect as User B
-	userBConn, _, err := websocket.DefaultDialer.Dial(wsURL+"?userID=userB", nil)
-	defer userBConn.Close()
+	userBConn, rB, err := websocket.DefaultDialer.Dial(wsURL+"?userID=userB", nil)
 	require.NoError(t, err, "Failed to connect as User B")
 
 	// Connect as User C to check that they don't receive the message
-	userCConn, _, err := websocket.DefaultDialer.Dial(wsURL+"?userID=userC", nil)
-	defer userCConn.Close()
+	userCConn, rC, err := websocket.DefaultDialer.Dial(wsURL+"?userID=userC", nil)
 	require.NoError(t, err, "Failed to connect as User C")
 
 	msgToA := &ws.Message{
@@ -158,14 +155,16 @@ func TestMessageHandler_HandleWS(t *testing.T) {
 		To:      "userA",
 		Content: "Hello, User A!",
 	}
-	userBConn.WriteJSON(msgToA)
+	err = userBConn.WriteJSON(msgToA)
+	require.NoError(t, err, "Failed to send message to User A")
 
 	msgToB := &ws.Message{
 		From:    "userA",
 		To:      "userB",
 		Content: "Hello, User B!",
 	}
-	userAConn.WriteJSON(msgToB)
+	err = userAConn.WriteJSON(msgToB)
+	require.NoError(t, err, "Failed to send message to User B")
 
 	// Receive the message on User B's connection
 	var receivedMessage ws.Message
@@ -190,4 +189,26 @@ func TestMessageHandler_HandleWS(t *testing.T) {
 		return err == nil
 	}, 20*time.Millisecond, 500*time.Millisecond,
 		"User C should not receive the message")
+
+	// Properly close connections
+	err = userAConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	require.NoError(t, err, "Failed to send close message for User A")
+	err = userAConn.Close()
+	require.NoError(t, err, "Failed to close connection for User A")
+	err = rA.Body.Close()
+	require.NoError(t, err, "Failed to close response body for User A")
+
+	err = userBConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	require.NoError(t, err, "Failed to send close message for User B")
+	err = userBConn.Close()
+	require.NoError(t, err, "Failed to close connection for User B")
+	err = rB.Body.Close()
+	require.NoError(t, err, "Failed to close response body for User B")
+
+	err = userCConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	require.NoError(t, err, "Failed to send close message for User C")
+	err = userCConn.Close()
+	require.NoError(t, err, "Failed to close connection for User C")
+	err = rC.Body.Close()
+	require.NoError(t, err, "Failed to close response body for User C")
 }
