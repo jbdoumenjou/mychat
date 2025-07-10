@@ -1,73 +1,84 @@
-run:
-  deadline: 5m
-  skip-files: [ ]
-  skip-dirs: [ ]
-
-linters-settings:
-  govet:
-    enable-all: true
-    disable:
-      - fieldalignment
-  gocyclo:
-    min-complexity: 16
-  cyclop:
-    max-complexity: 16
-  maligned:
-    suggest-new: true
-  goconst:
-    min-len: 5
-    min-occurrences: 3
-  misspell:
-    locale: US
-  funlen:
-    lines: -1
-    statements: 50
-  godox:
-    keywords:
-      - FIXME
-  gofumpt:
-    extra-rules: true
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-    disabled-checks:
-      - sloppyReassign
-      - rangeValCopy
-      - octalLiteral
-      - paramTypeCombine # already handle by gofumpt.extra-rules
-  lll:
-    line-length: 150
-  iface:
-    # List of analyzers.
-    # Default: ["identical"]
-    enable:
-#      - identical # Identifies interfaces in the same package that have identical method sets.
-      - unused # Identifies interfaces that are not used anywhere in the same package where the interface is defined.
-      - opaque
-
+version: "2"
 linters:
-  enable-all: true
+  default: all
   disable:
-    - exportloopref # deprecated
-    - exhaustruct
-    - varnamelen
-    - testpackage
-    - paralleltest
-    - gochecknoglobals
     - depguard
+    - exhaustruct
+    - gochecknoglobals
     - mnd
+    - noinlineerr
     - nonamedreturns
-
+    - paralleltest
+    - testpackage
+    - varnamelen
+    - wsl
+  settings:
+    cyclop:
+      max-complexity: 16
+    funlen:
+      lines: -1
+      statements: 50
+    goconst:
+      min-len: 5
+      min-occurrences: 3
+    gocritic:
+      disabled-checks:
+        - sloppyReassign
+        - rangeValCopy
+        - octalLiteral
+        - paramTypeCombine
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+    gocyclo:
+      min-complexity: 16
+    godox:
+      keywords:
+        - FIXME
+    govet:
+      disable:
+        - fieldalignment
+      enable-all: true
+    iface:
+      enable:
+        - unused
+        - opaque
+    lll:
+      line-length: 150
+    misspell:
+      locale: US
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - gosec
+        path: internal/api/message_handler_test.go
+        text: 'G404:'
+      - path: (.+)\.go$
+        text: 'package-comments: should have a package comment'
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-use-default: false
-  max-per-linter: 0
   max-same-issues: 0
-  exclude:
-    - 'package-comments: should have a package comment'
-  exclude-rules:
-    - linters:
-        - gosec
-      text: "G404:"
-      path: "internal/api/message_handler_test.go"
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gofumpt:
+      extra-rules: true
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
