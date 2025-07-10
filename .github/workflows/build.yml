@@ -7,13 +7,19 @@ on:
     types: [opened, synchronize, reopened]
 jobs:
   sonarqube:
+
     name: SonarQube
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Run unit tests and generate coverage report
+        run: go test -coverprofile=coverage.out ./...
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
+        with:
+          args: >
+            -Dsonar.go.coverage.reportPaths=coverage.out
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
