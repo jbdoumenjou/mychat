@@ -55,6 +55,7 @@ func TestChatHandler_ListChats(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 
 	var result []ChatResponse
+
 	err = json.NewDecoder(rr.Body).Decode(&result)
 	require.NoError(t, err)
 	require.NotEmpty(t, result)
@@ -107,6 +108,7 @@ func TestChatHandler_ListChatMessages(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 
 	var result []string
+
 	err = json.NewDecoder(rr.Body).Decode(&result)
 	require.NoError(t, err)
 	require.NotEmpty(t, result)

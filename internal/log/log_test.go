@@ -38,6 +38,7 @@ func TestNewCallerHandler(t *testing.T) {
 
 func TestInitLogger(t *testing.T) {
 	var buf bytes.Buffer
+
 	err := InitLogger(&buf, "DEBUG")
 	require.NoError(t, err)
 
